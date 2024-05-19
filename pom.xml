@@ -57,8 +57,20 @@
             <scope>test</scope>
         </dependency>
 
-    </dependencies>
+        <!--  jmh   -->
+        <dependency>
+            <groupId>org.openjdk.jmh</groupId>
+            <artifactId>jmh-core</artifactId>
+            <version>${jmh.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openjdk.jmh</groupId>
+            <artifactId>jmh-generator-annprocess</artifactId>
+            <version>${jmh.version}</version>
+            <scope>provided</scope>
+        </dependency>
 
+    </dependencies>
 
 
     <build>
@@ -82,8 +94,6 @@
             </plugin>
         </plugins>
     </build>
-
-
 
 
 </project>

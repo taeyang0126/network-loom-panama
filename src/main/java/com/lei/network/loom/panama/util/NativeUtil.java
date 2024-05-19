@@ -1,7 +1,9 @@
 package com.lei.network.loom.panama.util;
 
+import com.lei.network.loom.panama.constant.Constants;
 import com.lei.network.loom.panama.exception.ExceptionType;
 import com.lei.network.loom.panama.exception.FrameworkException;
+import com.lei.network.loom.panama.library.OsType;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
@@ -36,6 +38,32 @@ public final class NativeUtil {
      * 这是一个约定俗成的无效内存地址，我们只需要通过判断地址是否为0即可判断空指针
      */
     public static final MemorySegment NULL_POINTER = MemorySegment.ofAddress(0L);
+
+    private static final int CPU_CORES = Runtime.getRuntime().availableProcessors();
+
+    private static final String osName = System.getProperty("os.name").toLowerCase();
+    private static final OsType osType = detectOsType();
+
+    private static final long I_MAX = Integer.MAX_VALUE;
+    private static final long I_MIN = Integer.MIN_VALUE;
+
+    /**
+     *  Safely cast long to int, throw an exception if overflow
+     */
+    public static int castInt(long l) {
+        if(l < I_MIN || l > I_MAX) {
+            throw new FrameworkException(ExceptionType.NATIVE, Constants.UNREACHED);
+        }
+        return (int) l;
+    }
+
+    public static OsType ostype() {
+        return osType;
+    }
+
+    public static int getCpuCores() {
+        return CPU_CORES;
+    }
 
     public static boolean checkNullPointer(MemorySegment memorySegment) {
         return memorySegment == null || memorySegment.address() == 0L;
@@ -173,6 +201,18 @@ public final class NativeUtil {
         }
 
         return true;
+    }
+
+    private static OsType detectOsType() {
+        if(osName.contains("windows")) {
+            return OsType.Windows;
+        }else if(osName.contains("linux")) {
+            return OsType.Linux;
+        }else if(osName.contains("mac") && osName.contains("os")) {
+            return OsType.MacOS;
+        }else {
+            return OsType.Unknown;
+        }
     }
 
 
