@@ -6,11 +6,19 @@ import com.lei.network.loom.panama.exception.FrameworkException;
 import com.lei.network.loom.panama.library.OsType;
 
 import java.lang.foreign.Arena;
+import java.lang.foreign.FunctionDescriptor;
+import java.lang.foreign.Linker;
 import java.lang.foreign.MemorySegment;
+import java.lang.foreign.SymbolLookup;
 import java.lang.foreign.ValueLayout;
+import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static com.lei.network.loom.panama.constant.Constants.NUT;
 import static com.lei.network.loom.panama.constant.Constants.UNREACHED;
@@ -46,6 +54,46 @@ public final class NativeUtil {
 
     private static final long I_MAX = Integer.MAX_VALUE;
     private static final long I_MIN = Integer.MIN_VALUE;
+
+    private static final Arena globalArena = Arena.global();
+
+    private static final Linker linker = Linker.nativeLinker();
+
+    private static final String libPath = System.getProperty("TENET_LIBRARY_PATH");
+    private static final Map<String, SymbolLookup> libraryCache = new ConcurrentHashMap<>();
+
+    private static String getDynamicLibraryName(String identifier) {
+        return switch (osType) {
+            case Windows -> STR."lib\{identifier}.dll";
+            case Linux -> STR."lib\{identifier}.so";
+            case MacOS -> STR."lib\{identifier}.dylib";
+            default -> throw new FrameworkException(ExceptionType.NATIVE, "Unrecognized operating system");
+        };
+    }
+
+    public static SymbolLookup loadLibrary(String identifier) {
+        if(libPath == null) {
+            throw new FrameworkException(ExceptionType.NATIVE, "Global libPath not found");
+        }
+        return libraryCache.computeIfAbsent(identifier, i -> SymbolLookup.libraryLookup(STR."\{libPath}/\{getDynamicLibraryName(i)}", Arena.global()));
+    }
+
+
+    public static MethodHandle methodHandle(SymbolLookup lookup, String methodName, FunctionDescriptor functionDescriptor, Linker.Option... options) {
+        MemorySegment methodPointer = lookup.find(methodName)
+                .orElseThrow(() -> new FrameworkException(ExceptionType.NATIVE, STR."Unable to load target native method : \{methodName}"));
+        return linker.downcallHandle(methodPointer, functionDescriptor, options);
+    }
+
+    public static MethodHandle methodHandle(SymbolLookup lookup, List<String> methodNames, FunctionDescriptor functionDescriptor, Linker.Option... options) {
+        for (String methodName : methodNames) {
+            Optional<MemorySegment> methodPointer = lookup.find(methodName);
+            if (methodPointer.isPresent()) {
+                return linker.downcallHandle(methodPointer.get(), functionDescriptor, options);
+            }
+        }
+        throw new FrameworkException(ExceptionType.NATIVE, STR."Unable to load target native method : \{methodNames}");
+    }
 
     /**
      *  Safely cast long to int, throw an exception if overflow
