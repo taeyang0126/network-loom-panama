@@ -11,6 +11,8 @@ import java.lang.foreign.ValueLayout;
  */
 public interface Constants {
 
+    String TENET = "tenet";
+
     // 用于表示在程序流程中，完全不应该触及的分支
     String UNREACHED = "Shouldn't be reached";
 

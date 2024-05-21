@@ -1,5 +1,9 @@
 package com.lei.network.loom.panama.ffi;
 
+import com.lei.network.loom.panama.constant.Constants;
+import com.lei.network.loom.panama.util.NativeUtil;
+import org.junit.jupiter.api.Test;
+
 import java.io.File;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
@@ -8,6 +12,8 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.SymbolLookup;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * <p>
@@ -23,7 +29,8 @@ import java.lang.invoke.MethodHandle;
  */
 public class InvokeLibraryTest {
 
-    public static void main(String[] args) {
+    @Test
+    public void test_hello() {
         // 1. 将动态链接库文件加载为一个 SymbolLookup 对象
         // Arena.global() 代表的是该动态链接库的生命作用域，通常都会使用全局global作用域，这样动态链接库只有在JVM退出的时候才会被自动卸载
         SymbolLookup symbolLookup = SymbolLookup.libraryLookup(new File("c/hello.dylib").toPath(), Arena.global());
@@ -51,4 +58,16 @@ public class InvokeLibraryTest {
 
         // 如果需要采用共享堆外内存的方式来进行通信，那么可以手动的根据场景插入VarHandle.fullFence()等内存屏障，或者是使用pthread库中提供的mutex对直接内存进行加锁
     }
+
+    @Test
+    public void test_libTenet_createSocket() throws Throwable {
+        System.setProperty("TENET_LIBRARY_PATH", "/Users/wulei/IdeaProjects/learn/network-loom-panama/lib");
+
+        String library = Constants.TENET;
+        SymbolLookup symbolLookup = NativeUtil.loadLibrary(library);
+        MethodHandle methodHandle = NativeUtil.methodHandle(symbolLookup, "m_ipv4_socket_create", FunctionDescriptor.of(ValueLayout.JAVA_INT));
+        int o = (int) methodHandle.invokeExact();
+        assertTrue(o > 0);
+    }
+
 }
