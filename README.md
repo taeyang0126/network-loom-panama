@@ -10,6 +10,4 @@
 - 运行时VM配置 `--enable-preview --enable-native-access=ALL-UNNAMED`
 
 ### 动态库生成
-- 执行 `make` 命令，会在 [lib](lib) 目录下生成动态库
-- [lib](lib) 目录下已经存放了各个环境生成的动态库，建议自己在机器上重新执行 `make` 命令生成
-- [c](c) 是用到文件
+- 执行 `make` 命令，会在 [lib](lib) 目录下生成对应平台的动态库
